@@ -7,6 +7,7 @@ from appJar import gui
 from docx import Document
 from docx.shared import Inches
 from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import sqlite3
 import io
 import os
@@ -44,21 +45,40 @@ def insertSmell():
             smellDocumentation = [(smellName, description, rationale, causes, sqlite3.Binary(ablob), affected, abstractions, considerations)]
             c.executemany('INSERT INTO smell VALUES (?,?,?,?,?,?,?,?)', smellDocumentation)
             conn.commit()
-            app.infoBox("MdgDone", "Saved!", parent=None)
             app.clearAllEntries(callFunction=False)
             app.clearAllTextAreas(callFunction=False)
+            app.infoBox("MsgDone", "Saved!", parent=None)
         elif not example:
             smellDocumentation = [(smellName, description, rationale, causes, '', affected, abstractions, considerations)]
             c.executemany('INSERT INTO smell VALUES (?,?,?,?,?,?,?,?)', smellDocumentation)
             conn.commit()
-            app.infoBox("MdgDone", "Saved!", parent=None)
             app.clearAllEntries(callFunction=False)
             app.clearAllTextAreas(callFunction=False)
+            app.infoBox("MsgDone", "Saved!", parent=None)
         else:
             app.infoBox("MsgInsert", "The file is not a PNG file!", parent=None)
     else:
-        app.infoBox("MsgEmpty", "The smell already exist!", parent=None)
-
+        question = app.yesNoBox("MsgQuestion", "The smell already exist!. Do you want to overwrite the data?", parent=None)
+        if question is True:
+            if example.endswith('png'):
+                png = open(example,'rb')
+                ablob = png.read()
+                smellDocumentation = [(description, rationale, causes, sqlite3.Binary(ablob), affected, abstractions, considerations, smellName)]
+                c.executemany('UPDATE smell SET Description=?, rationale=?, causes=?, example=?, affected=?, abstractions=?, considerations = ? WHERE Smell = ?',smellDocumentation)
+                conn.commit()
+                app.clearAllEntries(callFunction=False)
+                app.clearAllTextAreas(callFunction=False)
+                app.infoBox("MsgUpdate", "Updated!", parent=None)
+            elif not example:
+                smellDocumentation = [(description, rationale, causes, '', affected, abstractions, considerations, smellName)]
+                c.executemany('UPDATE smell SET Description=?, rationale=?, causes=?, example=?, affected=?, abstractions=?, considerations = ? WHERE Smell = ?', smellDocumentation)
+                conn.commit()
+                app.clearAllEntries(callFunction=False)
+                app.clearAllTextAreas(callFunction=False)
+                app.infoBox("MsgUpdate", "Updated!", parent=None)
+            else:
+                app.infoBox("MsgInsert", "The file is not a PNG file!. Data was not updated!.", parent=None)   
+             
 def searchSmell(op):
     smell = ''
     if op == 1:
@@ -178,6 +198,8 @@ def processRow(pos):
     font = run.font
     font.size = Pt(12)
     p = document.add_paragraph(description)
+    paragraph_format = p.paragraph_format
+    paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     #Rationale
     p = document.add_paragraph()
@@ -187,6 +209,8 @@ def processRow(pos):
     font = run.font
     font.size = Pt(12)
     p = document.add_paragraph(rationale)
+    paragraph_format = p.paragraph_format
+    paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     #Causes
     p = document.add_paragraph()
@@ -196,6 +220,8 @@ def processRow(pos):
     font = run.font
     font.size = Pt(12)
     p = document.add_paragraph(causes)
+    paragraph_format = p.paragraph_format
+    paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     #Examples
     p = document.add_paragraph()
@@ -211,6 +237,9 @@ def processRow(pos):
         with open(filename, 'wb') as output_file:
             output_file.write(png)
         document.add_picture(filename)
+    else:
+        if not os.path.exists(smell):
+            os.makedirs(smell)
     
     #Affected
     p = document.add_paragraph()
@@ -220,6 +249,8 @@ def processRow(pos):
     font = run.font
     font.size = Pt(12)
     p = document.add_paragraph(affected)
+    paragraph_format = p.paragraph_format
+    paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
     
     #Abstractions
     p = document.add_paragraph()
@@ -229,6 +260,8 @@ def processRow(pos):
     font = run.font
     font.size = Pt(12)
     p = document.add_paragraph(abstractions)
+    paragraph_format = p.paragraph_format
+    paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
     #Practical Considerations
     p = document.add_paragraph()
@@ -238,6 +271,8 @@ def processRow(pos):
     font = run.font
     font.size = Pt(12)
     p = document.add_paragraph(considerations)
+    paragraph_format = p.paragraph_format
+    paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
   
     document.add_page_break()
     document.save(smell + '/' + smell + '.docx')
@@ -310,7 +345,7 @@ app.setLabelBg("lblSmellDesc", "black")
 app.setLabelFg("lblSmellDesc", "white")
 app.getLabelWidget("lblSmellDesc").config(font="Verdana 12 italic bold" )
 app.addScrolledTextArea('Description', 2,0)
-app.getTextAreaWidget("Description").config(height="2")
+app.getTextAreaWidget("Description").config(height="3")
 app.stopFrame()
 
 #3-0
@@ -324,7 +359,7 @@ app.setLabelBg("lblRationale", "black")
 app.setLabelFg("lblRationale", "white")
 app.getLabelWidget("lblRationale").config(font="Verdana 12 italic bold" )
 app.addScrolledTextArea('implRationale', 2,0)
-app.getTextAreaWidget("implRationale").config(height="2")
+app.getTextAreaWidget("implRationale").config(height="3")
 app.stopFrame()
 
 #4-0
@@ -338,7 +373,7 @@ app.setLabelBg("lblPotential", "black")
 app.setLabelFg("lblPotential", "white")
 app.getLabelWidget("lblPotential").config(font="Verdana 12 italic bold" )
 app.addScrolledTextArea('implPotential', 2,0)
-app.getTextAreaWidget("implPotential").config(height="2")
+app.getTextAreaWidget("implPotential").config(height="3")
 app.stopFrame()
 #5-0
 app.startFrame("frm4", row=5, column=0)
@@ -393,7 +428,7 @@ app.setLabelBg("lblPractialCons", "black")
 app.setLabelFg("lblPractialCons", "white")
 app.getLabelWidget("lblPractialCons").config(font="Verdana 12 italic bold" )
 app.addScrolledTextArea('impllblPractialCons', 2,0)
-app.getTextAreaWidget("impllblPractialCons").config(height="2")
+app.getTextAreaWidget("impllblPractialCons").config(height="3")
 app.stopFrame()
 
 #add menu
@@ -413,6 +448,7 @@ header = getTableHeader()
 app.addTable("SmellTable", header, action=processRow, actionHeading= "PDF")
 rows = getAllSmell()
 app.addTableRows("SmellTable", rows)
+app.getTableWidget('SmellTable').config(width=40, height=50)
 app.stopTab()
 
 app.stopTabbedFrame()
